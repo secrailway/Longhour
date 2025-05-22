@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cross-Origin-Opener-Policy" content="same-origin-allow-popups">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>Google Sheet Report and Update</title>
+    <script src="https://apis.google.com/js/api.js?v=2025052205"></script>
+    <script src="https://accounts.google.com/gsi/client?v=2025052205"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        /* Reset and Base Styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+            color: #111827;
+            line-height: 1.5;
+            padding: 12px;
+        }
+
+        /* Form Container */
+        .form-container {
+            width: 100%;
+            max-width: 100%;
+            margin: 0 auto 12px;
+            background: #ffffff;
+            padding: 10px;
+            border: 1px solid #e5e7eb;
+            border-radius: 4px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 8px;
+            align-items: end;
+        }
+
+        .form-container label {
+            font-weight: 500;
+            font-size: 11px;
+            color: #1f2937;
+            margin-bottom: 3px;
+            display: block;
+        }
+
+        .form-container select,
+        .form-container input[type="date"] {
+            width: 100%;
+            padding: 6px 8px;
+            border: 1px solid #d1d5db;
+            border-radius: 3px;
+            font-size: 11px;
+            background: #ffffff;
+            color: #111827;
+        }
+
+        .form-container select:focus,
+        .form-container input[type="date"]:focus {
+            border-color: #1e3a8a;
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(30, 58, 138, 0.15);
+        }
+
+        .form-container button {
+            padding: 6px 16px;
+            background-color: #1e3a8a;
+            color: #ffffff;
+            border: none;
+            border-radius: 3px;
+            font-size: 11px;
+            font-weight: 500;
+            cursor: pointer;
+        }
+
+        /* Feedback Messages */
+        .error {
+            color: #dc2626;
+            font-size: 11px;
+            margin: 6px auto;
+            max-width: 100%;
+            text-align: center;
+        }
+
+        .loading {
+            color: #0e7490;
+            font-size: 11px;
+            margin: 6px auto;
+            max-width: 100%;
+            text-align: center;
+        }
+
+        /* Table */
+        .table-container {
+            width: 100%;
+            max-width: 100%;
+            margin: 0 auto;
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: #ffffff;
+            border: 1px solid #000000;
+            border-radius: 4px;
+            font-size: 10.5px;
+        }
+
+        th, td {
+            padding: 5px 6px;
+            text-align: left;
+            border: 1px solid #000000;
+            vertical-align: top;
+        }
+
+        th {
+            background-color: #4b5563;
+            color: #ffffff;
+            font-weight: 600;
+            font-size: 11px;
+            position: sticky;
+            top: 0;
+            z-index: 1;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+
+        td {
+            background-color: #ffffff;
+            color: #1f2937;
+        }
+
+        tr:nth-child(even) td {
+            background-color: #f9fafb;
+        }
+
+        /* Highlight forwarded rows */
+        tr.forwarded-row td {
+            background-color: #d4edda !important;
+        }
+
+        /* Column Widths */
+        th:nth-child(1), td:nth-child(1) { width: 7%; } /* LP ID */
+        th:nth-child(2), td:nth-child(2) { width: 9%; } /* LP Name */
+        th:nth-child(3), td:nth-child(3) { width: 7%; } /* LP Mobile */
+        th:nth-child(4), td:nth-child(4) { width: 9%; } /* ALP Name */
+        th:nth-child(5), td:nth-child(5) { width: 9%; } /* Sign On Time */
+        th:nth-child(6), td:nth-child(6) { width: 5%; } /* Train No */
+        th:nth-child(7), td:nth-child(7) { width: 5%; } /* LOCO No */
+        th:nth-child(8), td:nth-child(8) { width: 2%; } /* Last Passed Station */
+        th:nth-child(9), td:nth-child(9) { width: 7%; } /* Crew Entry Time */
+        th:nth-child(10), td:nth-child(10) { width: 4%; } /* DUTY HRS */
+        th:nth-child(11), td:nth-child(11) { width: 9%; } /* Current Location */
+        th:nth-child(12), td:nth-child(12) { width: 7%; } /* Assign Lobby */
+        th:nth-child(13), td:nth-child(13) { width: 11%; } /* TLC Remark */
+        th:nth-child(14), td:nth-child(14) { width: 6%; } /* Action */
+
+        /* Table Inputs */
+        input[type="text"] {
+            width: 100%;
+            padding: 4px 6px;
+            border: 1px solid #d1d5db;
+            border-radius: 3px;
+            font-size: 10.5px;
+            background: #ffffff;
+        }
+
+        select {
+            width: 100%;
+            padding: 4px 6px;
+            border: 1px solid #d1d5db;
+            border-radius: 3px;
+            font-size: 10.5px;
+            background: #ffffff;
+            color: #111827;
+        }
+
+        textarea {
+            width: 100%;
+            min-width: 120px;
+            min-height: 35px;
+            padding: 4px 6px;
+            border: 1px solid #d1d5db;
+            border-radius: 3px;
+            font-size: 10.5px;
+            background: #ffffff;
+            resize: vertical;
+        }
+
+        input[type="text"]:focus,
+        select:focus,
+        textarea:focus {
+            border-color: #1e3a8a;
+            box-shadow: 0 0 0 2px rgba(30, 58, 138, 0.15);
+            outline: none;
+        }
+
+        td button {
+            width: 100%;
+            padding: 4px 10px;
+            background-color: #15803d;
+            color: #ffffff;
+            border: none;
+            border-radius: 3px;
+            font-size: 10.5px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        td button:disabled {
+            background-color: #9ca3af;
+            cursor: not-allowed;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .form-container {
+                grid-template-columns: 1fr;
+            }
+
+            .form-container button {
+                width: 100%;
+            }
+
+            th, td {
+                font-size: 9.5px;
+                padding: 4px 5px;
+            }
+
+            input[type="text"],
+            select,
+            textarea,
+            td button {
+                font-size: 9.5px;
+                padding: 3px 4px;
+            }
+
+            textarea {
+                min-width: 100px;
+                min-height: 30px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            textarea {
+                min-width: 80px;
+            }
+
+            th:nth-child(13), td:nth-child(13) { width: 15%; } /* TLC Remark wider on small screens */
+        }
+    </style>
+</head>
+<body>
+    <div class="form-container">
+        <label for="section">Section:</label>
+        <select id="section">
+            <option value="BSP-CPH-DIPKA">BSP-CPH-DIPKA</option>
+            <option value="SGRD-RIG-JSG">SGRD-RIG-JSG</option>
+            <option value="CIC">CIC</option>
+        </select>
+        <label for="fromDate">From Date:</label>
+        <input type="date" id="fromDate">
+        <label for="toDate">To Date:</label>
+        <input type="date" id="toDate">
+        <button onclick="showReport()">Show Report</button>
+    </div>
+    <div id="error" class="error"></div>
+    <div id="loading" class="loading"></div>
+    <div class="table-container">
+        <table id="reportTable">
+            <thead>
+                <tr>
+                    <th>LP ID</th>
+                    <th>LP Name</th>
+                    <th>LP Mobile</th>
+                    <th>ALP Name</th>
+                    <th>Sign On Time</th>
+                    <th>Train No</th>
+                    <th>LOCO No</th>
+                    <th>Last Passed Station</th>
+                    <th>Crew Entry Time</th>
+                    <th>DUTY HRS</th>
+                    <th>Current Location</th>
+                    <th>Assign Lobby</th>
+                    <th>TLC Remark</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody id="reportBody"></tbody>
+        </table>
+    </div>
+
+    <script>
+        // Check for global 'hours' early
+        console.log('Initial global hours check:', {
+            exists: typeof window.hours !== 'undefined',
+            value: window.hours,
+            allHours: Object.keys(window).filter(k => k.toLowerCase().includes('hours'))
+        });
+
+        const CLIENT_ID = '547073147985-ap3u2ed867imq6q810gjc82jfsme6tqm.apps.googleusercontent.com';
+        const API_KEY = 'AIzaSyBf3C_Ly8bIF_f-t30wE2e7cMsc2hz0co0';
+        const SPREADSHEET_ID = '1Eob3yiujIi0sNtsPQr_HCvQtlybXnq6K11bm1wAcqAo';
+        const SHEET_NAME = 'input';
+        const SCOPES = 'https://www.googleapis.com/auth/spreadsheets';
+
+        let tokenClient;
+        let accessToken = null;
+
+        function initGoogleAPI() {
+            if (!window.location.protocol.startsWith('https')) {
+                document.getElementById('error').innerText = 'Warning: Running on HTTP may cause authentication errors. Use HTTPS for best results.';
+            }
+
+            gapi.load('client', () => {
+                gapi.client.init({
+                    apiKey: API_KEY,
+                    discoveryDocs: ['https://sheets.googleapis.com/$discovery/rest?version=v4'],
+                }).then(() => {
+                    tokenClient = google.accounts.oauth2.initTokenClient({
+                        client_id: CLIENT_ID,
+                        scope: SCOPES,
+                        callback: (tokenResponse) => {
+                            if (tokenResponse.error) {
+                                document.getElementById('error').innerText = 'Authentication failed: ' + tokenResponse.error;
+                                return;
+                            }
+                            accessToken = tokenResponse.access_token;
+                            document.getElementById('loading').innerText = 'Authenticated successfully!';
+                            setTimeout(() => { document.getElementById('loading').innerText = ''; }, 2000);
+                        },
+                    });
+                    tokenClient.requestAccessToken();
+                }).catch((error) => {
+                    document.getElementById('error').innerText = 'Error initializing Google API: ' + error.message;
+                });
+            });
+        }
+
+        function calculateDutyHours(signOnTime, currentTime) {
+            if (!signOnTime) return '';
+            try {
+                // Parse Sign On Time (format: DD/MM/YYYY HH:MM:SS)
+                const [datePart, timePart] = signOnTime.split(' ');
+                if (!datePart || !timePart) return ''; // Handle invalid format
+                const [day, month, year] = datePart.split('/').map(Number);
+                const [hours, minutes, seconds = 0] = timePart.split(':').map(Number); // Default seconds to 0 if missing
+                if (!day || !month || !year || isNaN(hours) || isNaN(minutes)) return ''; // Validate components
+
+                // Create Date object (local timezone, assumed IST)
+                const signOnDate = new Date(year, month - 1, day, hours, minutes, seconds);
+
+                // Validate Date object
+                if (isNaN(signOnDate.getTime())) return '';
+
+                // Calculate time difference in milliseconds
+                const diffMs = currentTime - signOnDate;
+                if (diffMs < 0) return ''; // Return empty if Sign On Time is in the future
+
+                // Convert to hours and minutes
+                const totalMinutes = Math.floor(diffMs / 1000 / 60);
+                const dutyHours = Math.floor(totalMinutes / 60);
+                const dutyMinutes = totalMinutes % 60;
+
+                // Format as HH:MM
+                return `${dutyHours.toString().padStart(2, '0')}:${dutyMinutes.toString().padStart(2, '0')}`;
+            } catch (error) {
+                console.error('Error calculating duty hours:', error);
+                return ''; // Return empty on parsing error
+            }
+        }
+
+        function showReport() {
+            const section = document.getElementById('section').value;
+            const fromDate = document.getElementById('fromDate').value;
+            const toDate = document.getElementById('toDate').value;
+
+            if (!fromDate || !toDate) {
+                document.getElementById('error').innerText = 'Please select both From Date and To Date.';
+                return;
+            }
+
+            if (!tokenClient) {
+                document.getElementById('error').innerText = 'Google API not initialized. Please wait and try again.';
+                setTimeout(showReport, 2000);
+                return;
+            }
+
+            if (!accessToken) {
+                document.getElementById('error').innerText = 'Not authenticated. Requesting access...';
+                tokenClient.requestAccessToken();
+                setTimeout(showReport, 3000);
+                return;
+            }
+
+            document.getElementById('loading').innerText = 'Fetching data...';
+            gapi.client.sheets.spreadsheets.values.get({
+                spreadsheetId: SPREADSHEET_ID,
+                range: `${SHEET_NAME}!A:X`, // Fetch up to Column X to include Sign Off Time
+            }).then((response) => {
+                document.getElementById('loading').innerText = '';
+                const values = response.result.values || [];
+                const tbody = document.getElementById('reportBody');
+                tbody.innerHTML = '';
+                document.getElementById('error').innerText = '';
+
+                // Get current time for duty hours calculation (IST)
+                const currentTime = new Date(); // Use actual current time in IST
+
+                // Filter data
+                const filteredData = values.filter((row, index) => {
+                    if (index === 0) return false; // Skip header row
+                    const rowSection = row[12] || ''; // Column M (ML/CIC)
+                    const rowDate = row[6] ? (row[6].includes('/') ? row[6].split('/').reverse().join('-') : row[6]) : '';
+                    const hasNoSignOffTime = !row[22]; // Column X (Sign Off Time)
+                    const dateMatch = (!fromDate || rowDate >= fromDate) && (!toDate || rowDate <= toDate);
+                    const sectionMatch = rowSection === section;
+                    return dateMatch && sectionMatch && hasNoSignOffTime;
+                });
+
+                if (filteredData.length === 0) {
+                    document.getElementById('error').innerText = 'No data found for the selected section and date range.';
+                }
+
+                filteredData.forEach((row, index) => {
+                    const rowIndex = values.indexOf(row) + 1; // 1-based index
+                    const isForwarded = !!row[17]; // Check if Current Location (Column R) is non-empty
+                    // Calculate duty hours
+                    const dutyHours = calculateDutyHours(row[7], currentTime);
+                    const tr = document.createElement('tr');
+                    tr.id = `row_${index}`; // Assign unique ID for row
+                    if (isForwarded) {
+                        tr.classList.add('forwarded-row'); // Highlight forwarded rows
+                    }
+                    tr.innerHTML = `
+                        <td>${row[0] || ''}</td> <!-- LP ID -->
+                        <td>${row[1] || ''}</td> <!-- LP Name -->
+                        <td>${row[2] || ''}</td> <!-- LP Mobile -->
+                        <td>${row[4] || ''}</td> <!-- ALP Name -->
+                        <td>${row[7] || ''}</td> <!-- Sign On Time -->
+                        <td>${row[9] || ''}</td> <!-- Train No -->
+                        <td>${row[10] || ''}</td> <!-- LOCO No -->
+                        <td>${row[11] || ''}</td> <!-- Last Passed Station -->
+                        <td>${row[13] || ''}</td> <!-- Crew Entry Time -->
+                        <td>${dutyHours}</td> <!-- DUTY HRS -->
+                        <td><input type="text" id="currentLocation_${index}" value="${row[17] || ''}" placeholder="Enter Location" style="text-transform: uppercase;" oninput="this.value = this.value.toUpperCase(); validateRow(${index})" ${isForwarded ? 'disabled="disabled"' : ''}></td>
+                        <td>
+                            <select id="assignLobby_${index}" oninput="validateRow(${index})" ${isForwarded ? 'disabled="disabled"' : ''}>
+                                <option value="" disabled ${!row[18] ? 'selected' : ''}>Select Lobby</option>
+                                <option value="AKT" ${row[18] === 'AKT' ? 'selected' : ''}>AKT</option>
+                                <option value="BJRI" ${row[18] === 'BJRI' ? 'selected' : ''}>BJRI</option>
+                                <option value="BRJN" ${row[18] === 'BRJN' ? 'selected' : ''}>BRJN</option>
+                                <option value="BSP" ${row[18] === 'BSP' ? 'selected' : ''}>BSP</option>
+                                <option value="KHS" ${row[18] === 'KHS' ? 'selected' : ''}>KHS</option>
+                                <option value="KRBA" ${row[18] === 'KRBA' ? 'selected' : ''}>KRBA</option>
+                                <option value="PND" ${row[18] === 'PND' ? 'selected' : ''}>PND</option>
+                                <option value="RIG" ${row[18] === 'RIG' ? 'selected' : ''}>RIG</option>
+                                <option value="SDL" ${row[18] === 'SDL' ? 'selected' : ''}>SDL</option>
+                                <option value="SJQ" ${row[18] === 'SJQ' ? 'selected' : ''}>SJQ</option>
+                                <option value="USL" ${row[18] === 'USL' ? 'selected' : ''}>USL</option>
+                            </select>
+                        </td>
+                        <td><textarea id="tlcRemark_${index}" placeholder="Enter TLC Remark" oninput="validateRow(${index})" ${isForwarded ? 'disabled="disabled"' : ''}>${row[19] || ''}</textarea></td>
+                        <td><button id="forwardButton_${index}" onclick="forwardData(${rowIndex}, ${index})" ${isForwarded ? 'disabled="disabled"' : 'disabled'}>Forward</button></td>
+                    `;
+                    tbody.appendChild(tr);
+                    // Trigger validation to check initial values
+                    validateRow(index);
+                });
+            }).catch((error) => {
+                document.getElementById('loading').innerText = '';
+                document.getElementById('error').innerText = `Error fetching data: ${error.result?.error?.message || error.message}`;
+                if (error.status === 400) {
+                    document.getElementById('error').innerText += ' (Check if the sheet name "input" exists and has data in range A:X)';
+                } else if (error.status === 401 || error.status === 403) {
+                    document.getElementById('error').innerText += ' (Invalid or expired token. Re-authenticating...)';
+                    tokenClient.requestAccessToken();
+                    setTimeout(showReport, 3000);
+                }
+            });
+        }
+
+        function validateRow(index) {
+            const currentLocationInput = document.getElementById(`currentLocation_${index}`);
+            const assignLobby = document.getElementById(`assignLobby_${index}`).value;
+            const tlcRemark = document.getElementById(`tlcRemark_${index}`).value.trim();
+            const forwardButton = document.getElementById(`forwardButton_${index}`);
+
+            // If the row is already forwarded (Current Location is disabled), keep the Forward button disabled
+            if (currentLocationInput.disabled) {
+                forwardButton.disabled = true;
+                return;
+            }
+
+            // Otherwise, enable the Forward button only if all fields are filled
+            const currentLocation = currentLocationInput.value.trim();
+            if (currentLocation && assignLobby && tlcRemark) {
+                forwardButton.disabled = false;
+            } else {
+                forwardButton.disabled = true;
+            }
+        }
+
+        function forwardData(rowIndex, index) {
+            // Debug global 'hours' variable
+            console.log('Global hours check in forwardData:', {
+                exists: typeof window.hours !== 'undefined',
+                value: window.hours,
+                allHours: Object.keys(window).filter(k => k.toLowerCase().includes('hours'))
+            });
+
+            if (!tokenClient) {
+                document.getElementById('error').innerText = 'Google API not initialized. Please wait and try again.';
+                setTimeout(() => forwardData(rowIndex, index), 2000);
+                return;
+            }
+
+            if (!accessToken) {
+                document.getElementById('error').innerText = 'Not authenticated. Requesting access...';
+                tokenClient.requestAccessToken();
+                setTimeout(() => forwardData(rowIndex, index), 3000);
+                return;
+            }
+
+            const currentLocation = document.getElementById(`currentLocation_${index}`).value.trim().toUpperCase();
+            const assignLobby = document.getElementById(`assignLobby_${index}`).value;
+            const tlcRemark = document.getElementById(`tlcRemark_${index}`).value.trim();
+
+            // Validate all fields are filled
+            if (!currentLocation || !assignLobby || !tlcRemark) {
+                document.getElementById('error').innerText = 'Please fill Current Location, Assign Lobby, and TLC Remark.';
+                return;
+            }
+
+            // Generate TLC Timestamp in IST
+            try {
+                const now = new Date();
+                const tlcTimestamp = now.toLocaleString('en-IN', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                    hour12: false
+                }).replace(/,/, '').replace(/(\d+)\/(\d+)\/(\d+)/, '$1/$2/$3');
+
+                document.getElementById('loading').innerText = 'Updating data...';
+                gapi.client.sheets.spreadsheets.values.update({
+                    spreadsheetId: SPREADSHEET_ID,
+                    range: `${SHEET_NAME}!Q${rowIndex}:T${rowIndex}`,
+                    valueInputOption: 'RAW',
+                    resource: {
+                        values: [[tlcTimestamp, currentLocation, assignLobby, tlcRemark]]
+                    }
+                }).then(() => {
+                    document.getElementById('loading').innerText = '';
+                    alert('Data updated successfully!');
+                    // Disable input fields and Forward button instead of removing the row
+                    document.getElementById(`currentLocation_${index}`).disabled = true;
+                    document.getElementById(`assignLobby_${index}`).disabled = true;
+                    document.getElementById(`tlcRemark_${index}`).disabled = true;
+                    document.getElementById(`forwardButton_${index}`).disabled = true;
+                }).catch((error) => {
+                    document.getElementById('loading').innerText = '';
+                    document.getElementById('error').innerText = `Error updating data: ${error.result?.error?.message || error.message}`;
+                    if (error.status === 401 || error.status === 403) {
+                        document.getElementById('error').innerText += ' (Invalid or expired token. Re-authenticating...)';
+                        tokenClient.requestAccessToken();
+                        setTimeout(() => forwardData(rowIndex, index), 3000);
+                    }
+                });
+            } catch (error) {
+                document.getElementById('loading').innerText = '';
+                document.getElementById('error').innerText = `Error formatting timestamp: ${error.message}`;
+            }
+        }
+
+        // Initialize Google API on page load
+        window.onload = initGoogleAPI;
+    </script>
+</body>
+</html>

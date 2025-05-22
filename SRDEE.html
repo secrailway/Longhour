@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Railway Crew Report</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        /* Reset and Base Styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', Arial, sans-serif;
+            background-color: #f3f4f6;
+            color: #111827;
+            line-height: 1.5;
+            padding: 12px;
+        }
+
+        /* Form Container */
+        .form-container {
+            width: 100%;
+            max-width: 100%;
+            margin: 0 auto 12px;
+            background: #ffffff;
+            padding: 10px;
+            border: 1px solid #e5e7eb;
+            border-radius: 4px;
+        }
+
+        /* Table */
+        .table-container {
+            width: 100%;
+            max-width: 100%;
+            margin: 0 auto;
+            overflow-x: hidden;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: #ffffff;
+            border: 1px solid #000000;
+            border-radius: 4px;
+            font-size: 10.5px;
+            table-layout: fixed;
+        }
+
+        th, td {
+            padding: 5px 6px;
+            text-align: left;
+            border: 1px solid #000000;
+            vertical-align: top;
+        }
+
+        th {
+            background-color: #0447a5;
+            color: #ffffff;
+            font-weight: 600;
+            font-size: 11px;
+            position: sticky;
+            top: 0;
+            z-index: 1;
+            text-transform: uppercase;
+            white-space: normal;
+            overflow-wrap: break-word;
+        }
+
+        td {
+            background-color: #ffffff;
+            color: #1f2937;
+            white-space: normal;
+            overflow-wrap: break-word;
+        }
+
+        /* Highlighted Rows (>10 hours, non-Sign Off filters) */
+        .highlight-row td {
+            background-color: #ef4444 !important;
+            color: #ffffff !important;
+        }
+
+        /* Sign Off Filter Colors */
+        .signoff-less-10 td {
+            background-color: #ffffff !important;
+            color: #1f2937 !important;
+        }
+
+        .signoff-10-12 td {
+            background-color: #fef08a !important;
+            color: #1f2937 !important;
+        }
+
+        .signoff-over-12 td {
+            background-color: #7f1d1d !important;
+            color: #ffffff !important;
+        }
+
+        /* Truncate long text in specific columns */
+        td:nth-child(2), td:nth-child(4), td:nth-child(9), td:nth-child(11), td:nth-child(15), td:nth-child(16) {
+            text-overflow: ellipsis;
+            overflow: hidden;
+            max-width: 0;
+        }
+
+        /* Column Widths */
+        th:nth-child(1), td:nth-child(1) { width: 8%; } /* LP ID */
+        th:nth-child(2), td:nth-child(2) { width: 9%; } /* LP Name */
+        th:nth-child(3), td:nth-child(3) { width: 8%; } /* LP Mobile */
+        th:nth-child(4), td:nth-child(4) { width: 9%; } /* ALP Name */
+        th:nth-child(5), td:nth-child(5) { width: 8%; } /* Sign On Time */
+        th:nth-child(6), td:nth-child(6) { width: 7%; } /* Crew Entry Time */
+        th:nth-child(7), td:nth-child(7) { width: 5%; } /* Train No */
+        th:nth-child(8), td:nth-child(8) { width: 5%; } /* Loco No */
+        th:nth-child(9), td:nth-child(9) { width: 8%; } /* Last Passed Station */
+        th:nth-child(10), td:nth-child(10) { width: 7%; } /* TLC Timestamp */
+        th:nth-child(11), td:nth-child(11) { width: 8%; } /* Current Location */
+        th:nth-child(12), td:nth-child(12) { width: 5%; } /* Assign Lobby */
+        th:nth-child(13), td:nth-child(13) { width: 7%; } /* CCC Timestamp */
+        th:nth-child(14), td:nth-child(14) { width: 8%; } /* Remarks */
+        th:nth-child(15), td:nth-child(15) { width: 8%; } /* Sign Off Time and Station */
+        th:nth-child(16), td:nth-child(16) { width: 8%; } /* Total Duty Hours */
+
+        /* Remarks Dots */
+        .dot {
+            cursor: pointer;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 4px;
+        }
+
+        /* Loader */
+        .loader {
+            border: 3px solid #f3f4f6;
+            border-top: 3px solid #4b5563;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            margin-left: 8px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            th, td {
+                font-size: 9.5px;
+                padding: 4px 5px;
+            }
+
+            .dot {
+                width: 7px;
+                height: 7px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            th:nth-child(14), td:nth-child(14) { width: 12%; }
+            th:nth-child(15), td:nth-child(15) { width: 12%; }
+            th:nth-child(16), td:nth-child(16) { width: 12%; }
+            th:nth-child(2), td:nth-child(2), th:nth-child(4), td:nth-child(4) { width: 10%; }
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-gray-100">
+    <div class="container mx-auto p-4">
+        <h1 class="text-2xl font-bold text-center text-gray-800 mb-4">LONG HOURS MONITORING</h1>
+        <div class="form-container shadow-lg rounded-lg">
+            <form id="reportForm" class="flex flex-wrap items-end gap-4 p-4">
+                <div class="flex-1 min-w-[150px]">
+                    <label for="section" class="block text-xs font-medium text-gray-700">Section</label>
+                    <select id="section" name="section" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-[11px] p-1.5">
+                        <option value="ALL">ALL</option>
+                        <option value="BSP-CPH-DIPKA">BSP-CPH-DIPKA</option>
+                        <option value="SGRD-RIG-JSG">SGRD-RIG-JSG</option>
+                        <option value="CIC">CIC</option>
+                    </select>
+                </div>
+                <div class="flex-1 min-w-[150px]">
+                    <label for="fromDate" class="block text-xs font-medium text-gray-700">From Date</label>
+                    <input type="date" id="fromDate" name="fromDate" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-[11px] p-1.5">
+                </div>
+                <div class="flex-1 min-w-[150px]">
+                    <label for="toDate" class="block text-xs font-medium text-gray-700">To Date</label>
+                    <input type="date" id="toDate" name="toDate" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-[11px] p-1.5">
+                </div>
+                <div class="flex-1 min-w-[120px]">
+                    <label for="filter" class="block text-xs font-medium text-gray-700">Filter</label>
+                    <select id="filter" name="filter" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-[11px] p-1.5">
+                        <option value="all">Show All</option>
+                        <option value="red">Show Red Rows Only</option>
+                        <option value="signoff">Show Sign Off Data Only</option>
+                    </select>
+                </div>
+                <div class="flex items-end">
+                    <button type="submit" id="submitButton" class="inline-flex items-center px-3 py-1.5 bg-indigo-600 border border-transparent rounded-md font-semibold text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 text-[11px]">
+                        Show Report
+                        <span id="loader" class="loader hidden"></span>
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <div id="reportContainer" class="mt-4 bg-white shadow-lg rounded-lg p-4 hidden">
+            <h2 class="text-xl font-semibold text-gray-800 mb-3">Crew Report</h2>
+            <div class="table-container">
+                <table id="reportTable" class="min-w-full">
+                    <thead id="tableHeader"></thead>
+                    <tbody id="reportTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_KEY = 'AIzaSyBf3C_Ly8bIF_f-t30wE2e7cMsc2hz0co0';
+        const SPREADSHEET_ID = '1Eob3yiujIi0sNtsPQr_HCvQtlybXnq6K11bm1wAcqAo';
+        const SHEET_NAME = 'input';
+
+        async function fetchSheetData(section, fromDate, toDate, filter) {
+            const range = `${SHEET_NAME}!A:X`;
+            const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${range}?key=${API_KEY}`;
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+                if (!data.values) {
+                    console.error('No data found in sheet');
+                    return [];
+                }
+
+                const headers = data.values[0];
+                const rows = data.values.slice(1);
+                const filteredRows = rows.filter(row => {
+                    const signOffStation = row[23] || '';
+                    const sectionValue = row[12] || '';
+                    const signOnTime = row[7] || '';
+                    let rowDate = '';
+                    if (signOnTime) {
+                        try {
+                            const datePart = signOnTime.split(' ')[0];
+                            const [day, month, year] = datePart.split('/');
+                            rowDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+                        } catch (e) {
+                            console.warn(`Invalid Sign On Time format for row: ${signOnTime}`);
+                        }
+                    }
+                    const sectionMatch = section === 'ALL' || !section || sectionValue === section;
+                    const dateMatch = !fromDate || !toDate || (rowDate >= fromDate && rowDate <= toDate);
+                    const signOffMatch = filter === 'signoff' ? signOffStation : filter !== 'signoff' ? !signOffStation : true;
+                    return sectionMatch && dateMatch && signOffMatch;
+                });
+                console.log(`Fetched rows for section ${section}, filter ${filter}, count: ${filteredRows.length}`, filteredRows);
+                return filteredRows.map(row => ({
+                    lpId: row[0] || '',
+                    lpName: row[1] || '',
+                    lpMobile: row[2] || '',
+                    alpName: row[4] || '',
+                    signOnTime: row[7] || '',
+                    crewEntryTime: row[13] || '',
+                    trainNo: row[9] || '',
+                    locoNo: row[10] || '',
+                    lastPassedStation: row[11] || '',
+                    tlcTimestamp: row[16] || '',
+                    currentLocation: row[17] || '',
+                    assignLobby: row[18] || '',
+                    cccTimestamp: row[20] || '',
+                    tlcRemark: row[19] || '',
+                    cccRemark: row[21] || '',
+                    signOffTime: row[22] || '',
+                    signOffStation: row[23] || ''
+                }));
+            } catch (error) {
+                console.error('Error fetching data:', error);
+                return [];
+            }
+        }
+
+        function calculateDutyHours(signOnTime, signOffTime) {
+            if (!signOnTime || !signOffTime) {
+                console.warn(`Sign On or Sign Off Time is empty: Sign On=${signOnTime}, Sign Off=${signOffTime}`);
+                return 0;
+            }
+            try {
+                const parseDateTime = (dateTime) => {
+                    const [datePart, timePart] = dateTime.split(' ');
+                    if (!datePart || !timePart) throw new Error('Invalid format: Missing date or time');
+                    const [day, month, year] = datePart.split('/').map(Number);
+                    const [hours, minutes, seconds] = timePart.split(':').map(Number);
+                    if (isNaN(day) || isNaN(month) || isNaN(year) || isNaN(hours) || isNaN(minutes) || isNaN(seconds)) {
+                        throw new Error(`Invalid components: ${dateTime}`);
+                    }
+                    const date = new Date(year, month - 1, day, hours, minutes, seconds);
+                    if (isNaN(date.getTime())) throw new Error(`Invalid Date object: ${dateTime}`);
+                    return date;
+                };
+
+                const signOnDateTime = parseDateTime(signOnTime);
+                const signOffDateTime = parseDateTime(signOffTime);
+                const diffMs = signOffDateTime - signOnDateTime;
+                const diffHours = diffMs / (1000 * 60 * 60);
+                console.log(`Calculating duty hours: Sign On=${signOnTime}, Sign Off=${signOffTime}, Hours=${diffHours.toFixed(2)}`);
+                return diffHours > 0 ? diffHours : 0;
+            } catch (error) {
+                console.warn(`Error calculating duty hours: ${error.message}, Sign On=${signOnTime}, Sign Off=${signOffTime}`);
+                return 0;
+            }
+        }
+
+        function getDutyHoursClass(dutyHours) {
+            if (dutyHours < 10) {
+                return 'signoff-less-10';
+            } else if (dutyHours >= 10 && dutyHours <= 12) {
+                return 'signoff-10-12';
+            } else {
+                return 'signoff-over-12';
+            }
+        }
+
+        function isOverTenHours(signOnTime) {
+            if (!signOnTime) {
+                console.warn('Sign On Time is empty or undefined');
+                return false;
+            }
+            try {
+                const [datePart, timePart] = signOnTime.split(' ');
+                if (!datePart || !timePart) {
+                    console.warn(`Invalid Sign On Time format: ${signOnTime}`);
+                    return false;
+                }
+                const [day, month, year] = datePart.split('/').map(Number);
+                const [hours, minutes, seconds] = timePart.split(':').map(Number);
+                if (isNaN(day) || isNaN(month) || isNaN(year) || isNaN(hours) || isNaN(minutes) || isNaN(seconds)) {
+                    console.warn(`Invalid date/time components in: ${signOnTime}`);
+                    return false;
+                }
+                const signOnDateTime = new Date(year, month - 1, day, hours, minutes, seconds);
+                if (isNaN(signOnDateTime.getTime())) {
+                    console.warn(`Invalid Date object created from: ${signOnTime}`);
+                    return false;
+                }
+                const now = new Date();
+                const diffMs = now - signOnDateTime;
+                const diffHours = diffMs / (1000 * 60 * 60);
+                console.log(`Checking >10 hours: Sign On=${signOnTime}, Now=${now.toISOString()}, Diff Hours=${diffHours.toFixed(2)}`);
+                return diffHours > 10;
+            } catch (error) {
+                console.warn(`Error parsing Sign On Time: ${signOnTime}, Error: ${error.message}`);
+                return false;
+            }
+        }
+
+        function renderTable(data, filter) {
+            const tableHeader = document.getElementById('tableHeader');
+            const tableBody = document.getElementById('reportTableBody');
+            tableHeader.innerHTML = '';
+            tableBody.innerHTML = '';
+
+            // Set headers
+            const headerRow = document.createElement('tr');
+            const baseHeaders = [
+                'LP ID', 'LP Name', 'LP Mobile', 'ALP Name', 'Sign On Time', 'Crew Entry Time',
+                'Train No', 'Loco No', 'Last Passed Station', 'TLC Timestamp', 'Current Location',
+                'Assign Lobby', 'CCC Timestamp', 'Remarks'
+            ];
+            const headers = filter === 'signoff' ? [...baseHeaders, 'Sign Off Time and Station', 'Total Duty Hours'] : baseHeaders;
+            headers.forEach(header => {
+                const th = document.createElement('th');
+                th.textContent = header;
+                headerRow.appendChild(th);
+            });
+            tableHeader.appendChild(headerRow);
+
+            // Filter data
+            const filteredData = filter === 'red' ? data.filter(row => isOverTenHours(row.signOnTime)) : data;
+
+            if (filteredData.length === 0) {
+                console.warn('No data to display after filtering');
+                tableBody.innerHTML = `<tr><td colspan="${headers.length}" class="px-3 py-2 text-center text-sm text-gray-500">No records found</td></tr>`;
+            } else {
+                filteredData.forEach(row => {
+                    const tr = document.createElement('tr');
+                    const dutyHours = filter === 'signoff' ? calculateDutyHours(row.signOnTime, row.signOffTime) : 0;
+                    if (filter === 'signoff') {
+                        const className = getDutyHoursClass(dutyHours);
+                        tr.classList.add(className);
+                        console.log(`Sign Off Row: LP ID=${row.lpId}, Duty Hours=${dutyHours.toFixed(2)}, Class=${className}`);
+                    } else if (isOverTenHours(row.signOnTime)) {
+                        tr.classList.add('highlight-row');
+                        console.log(`Non-Sign Off Row: LP ID=${row.lpId}, >10 Hours, Class=highlight-row`);
+                    }
+                    const signOffCombined = filter === 'signoff' && row.signOffTime && row.signOffStation ? `${row.signOffTime} - ${row.signOffStation}` : '';
+                    const dutyHoursFormatted = filter === 'signoff' ? dutyHours.toFixed(2) : '';
+                    tr.innerHTML = `
+                        <td>${row.lpId}</td>
+                        <td>${row.lpName}</td>
+                        <td>${row.lpMobile}</td>
+                        <td>${row.alpName}</td>
+                        <td>${row.signOnTime}</td>
+                        <td>${row.crewEntryTime}</td>
+                        <td>${row.trainNo}</td>
+                        <td>${row.locoNo}</td>
+                        <td>${row.lastPassedStation}</td>
+                        <td>${row.tlcTimestamp}</td>
+                        <td>${row.currentLocation}</td>
+                        <td>${row.assignLobby}</td>
+                        <td>${row.cccTimestamp}</td>
+                        <td>
+                            <span class="dot bg-black" onclick="alert('${row.tlcRemark || 'No TLC Remark'}')"></span>
+                            <span class="dot bg-yellow-400" onclick="alert('${row.cccRemark || 'No CCC Remark'}')"></span>
+                        </td>
+                        ${filter === 'signoff' ? `<td>${signOffCombined}</td>` : ''}
+                        ${filter === 'signoff' ? `<td>${dutyHoursFormatted}</td>` : ''}
+                    `;
+                    tableBody.appendChild(tr);
+                });
+            }
+        }
+
+        async function loadDefaultData() {
+            const now = new Date();
+            const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+
+            const toDate = now.toISOString().split('T')[0];
+            const fromDate = yesterday.toISOString().split('T')[0];
+
+            document.getElementById('fromDate').value = fromDate;
+            document.getElementById('toDate').value = toDate;
+            document.getElementById('section').value = 'ALL';
+            document.getElementById('filter').value = 'all';
+
+            const submitButton = document.getElementById('submitButton');
+            const loader = document.getElementById('loader');
+            const tableBody = document.getElementById('reportTableBody');
+
+            loader.classList.remove('hidden');
+            submitButton.disabled = true;
+            submitButton.classList.add('opacity-50', 'cursor-not-allowed');
+            tableBody.innerHTML = '<tr><td colspan="14" class="px-3 py-2 text-center text-sm text-gray-500">Loading...</td></tr>';
+
+            const data = await fetchSheetData('ALL', fromDate, toDate, 'all');
+            renderTable(data, 'all');
+
+            loader.classList.add('hidden');
+            submitButton.disabled = false;
+            submitButton.classList.remove('opacity-50', 'cursor-not-allowed');
+            document.getElementById('reportContainer').classList.remove('hidden');
+        }
+
+        document.getElementById('reportForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const submitButton = document.getElementById('submitButton');
+            const loader = document.getElementById('loader');
+            const tableBody = document.getElementById('reportTableBody');
+
+            loader.classList.remove('hidden');
+            submitButton.disabled = true;
+            submitButton.classList.add('opacity-50', 'cursor-not-allowed');
+            tableBody.innerHTML = '<tr><td colspan="16" class="px-3 py-2 text-center text-sm text-gray-500">Loading...</td></tr>';
+
+            const section = document.getElementById('section').value;
+            const fromDate = document.getElementById('fromDate').value;
+            const toDate = document.getElementById('toDate').value;
+            const filter = document.getElementById('filter').value;
+
+            const data = await fetchSheetData(section, fromDate, toDate, filter);
+            renderTable(data, filter);
+
+            loader.classList.add('hidden');
+            submitButton.disabled = false;
+            submitButton.classList.remove('opacity-50', 'cursor-not-allowed');
+            document.getElementById('reportContainer').classList.remove('hidden');
+        });
+
+        window.onload = loadDefaultData;
+    </script>
+</body>
+</html>

@@ -1,0 +1,810 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cross-Origin-Opener-Policy" content="same-origin-allow-popups">
+    <title>CCC Report and Update</title>
+    <script src="https://apis.google.com/js/api.js"></script>
+    <script src="https://accounts.google.com/gsi/client"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        /* Reset and Base Styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+            color: #111827;
+            line-height: 1.5;
+            padding: 12px;
+        }
+
+        /* Form Container */
+        .form-container {
+            width: 100%;
+            max-width: 100%;
+            margin: 0 auto 12px;
+            background: #ffffff;
+            padding: 10px;
+            border: 1px solid #e5e7eb;
+            border-radius: 4px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 8px;
+            align-items: end;
+        }
+
+        .form-container label {
+            font-weight: 500;
+            font-size: 11px;
+            color: #1f2937;
+            margin-bottom: 3px;
+            display: block;
+        }
+
+        .form-container select,
+        .form-container input[type="date"] {
+            width: 100%;
+            padding: 6px 8px;
+            border: 1px solid #d1d5db;
+            border-radius: 3px;
+            font-size: 11px;
+            background: #ffffff;
+            color: #111827;
+        }
+
+        .form-container select:focus,
+        .form-container input[type="date"]:focus {
+            border-color: #1e3a8a;
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(30, 58, 138, 0.15);
+        }
+
+        .form-container button {
+            padding: 6px 16px;
+            background-color: #1e3a8a;
+            color: #ffffff;
+            border: none;
+            border-radius: 3px;
+            font-size: 11px;
+            font-weight: 500;
+            cursor: pointer;
+        }
+
+        /* Feedback Messages */
+        .error {
+            color: #dc2626;
+            font-size: 11px;
+            margin: 6px auto;
+            max-width: 100%;
+            text-align: center;
+        }
+
+        .loading {
+            color: #0e7490;
+            font-size: 11px;
+            margin: 6px auto;
+            max-width: 100%;
+            text-align: center;
+        }
+
+        /* Table */
+        .table-container {
+            width: 100%;
+            max-width: 100%;
+            margin: 0 auto;
+            overflow-x: auto;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        table {
+            width: 100%;
+            min-width: 800px; /* OUR CREW needs more space */
+            border-collapse: collapse;
+            background: #ffffff;
+            border: 1px solid #000000;
+            border-radius: 4px;
+            font-size: 10.5px;
+            table-layout: fixed;
+        }
+
+        th, td {
+            padding: 5px 6px;
+            text-align: left;
+            border: 1px solid #000000;
+            vertical-align: top;
+        }
+
+        th {
+            background-color: #0447a5;
+            color: #ffffff;
+            font-weight: 600;
+            font-size: 11px;
+            position: sticky;
+            top: 0;
+            z-index: 1;
+            text-transform: uppercase;
+            white-space: normal;
+            overflow-wrap: break-word;
+        }
+
+        td {
+            background-color: #ffffff;
+            color: #1f2937;
+            white-space: normal;
+            word-wrap: break-word;
+        }
+
+        tr:nth-child(even) td {
+            background-color: #f9fafb;
+        }
+
+        /* Light Orange for Partial Submit or Existing CCC Remark */
+        .partial-submit td,
+        .has-ccc-remark td {
+            background-color: #fed7aa !important;
+            color: #1f2937 !important;
+        }
+
+        /* Column Widths for OUR CREW */
+        th.our-crew:nth-child(1), td.our-crew:nth-child(1) { width: 6%; } /* LP ID */
+        th.our-crew:nth-child(2), td.our-crew:nth-child(2) { width: 6%; } /* LP Name */
+        th.our-crew:nth-child(3), td.our-crew:nth-child(3) { width: 7%; } /* LP Mobile */
+        th.our-crew:nth-child(4), td.our-crew:nth-child(4) { width: 6%; } /* ALP Name */
+        th.our-crew:nth-child(5), td.our-crew:nth-child(5) { width: 7%; } /* Sign On Time */
+        th.our-crew:nth-child(6), td.our-crew:nth-child(6) { width: 5%; } /* Train No */
+        th.our-crew:nth-child(7), td.our-crew:nth-child(7) { width: 5%; } /* LOCO No */
+        th.our-crew:nth-child(8), td.our-crew:nth-child(8) { width: 7%; } /* TimeStamp */
+        th.our-crew:nth-child(9), td.our-crew:nth-child(9) { width: 7%; } /* TLC Timestamp */
+        th.our-crew:nth-child(10), td.our-crew:nth-child(10) { width: 7%; } /* Current Location */
+        th.our-crew:nth-child(11), td.our-crew:nth-child(11) { width: 6%; } /* Assign Lobby */
+        th.our-crew:nth-child(12), td.our-crew:nth-child(12) { width: 6%; } /* Total Duty Hours */
+        th.our-crew:nth-child(13), td.our-crew:nth-child(13) { width: 10%; } /* CCC Remark */
+        th.our-crew:nth-child(14), td.our-crew:nth-child(14) { width: 8%; } /* Sign Off Time */
+        th.our-crew:nth-child(15), td.our-crew:nth-child(15) { width: 7%; } /* Sign Off Station */
+        th.our-crew:nth-child(16), td.our-crew:nth-child(16) { width: 5%; } /* Action */
+
+        /* Column Widths for OUR JURISDICTION */
+        th.our-jurisdiction:nth-child(1), td.our-jurisdiction:nth-child(1) { width: 7%; } /* LP ID */
+        th.our-jurisdiction:nth-child(2), td.our-jurisdiction:nth-child(2) { width: 7%; } /* LP Name */
+        th.our-jurisdiction:nth-child(3), td.our-jurisdiction:nth-child(3) { width: 7%; } /* LP Mobile */
+        th.our-jurisdiction:nth-child(4), td.our-jurisdiction:nth-child(4) { width: 7%; } /* ALP Name */
+        th.our-jurisdiction:nth-child(5), td.our-jurisdiction:nth-child(5) { width: 8%; } /* Sign On Time */
+        th.our-jurisdiction:nth-child(6), td.our-jurisdiction:nth-child(6) { width: 6%; } /* Train No */
+        th.our-jurisdiction:nth-child(7), td.our-jurisdiction:nth-child(7) { width: 6%; } /* LOCO No */
+        th.our-jurisdiction:nth-child(8), td.our-jurisdiction:nth-child(8) { width: 7%; } /* TimeStamp */
+        th.our-jurisdiction:nth-child(9), td.our-jurisdiction:nth-child(9) { width: 7%; } /* TLC Timestamp */
+        th.our-jurisdiction:nth-child(10), td.our-jurisdiction:nth-child(10) { width: 8%; } /* Current Location */
+        th.our-jurisdiction:nth-child(11), td.our-jurisdiction:nth-child(11) { width: 7%; } /* Total Duty Hours */
+        th.our-jurisdiction:nth-child(12), td.our-jurisdiction:nth-child(12) { width: 12%; } /* CCC Remark */
+        th.our-jurisdiction:nth-child(13), td.our-jurisdiction:nth-child(13) { width: 9%; } /* Sign Off Time */
+        th.our-jurisdiction:nth-child(14), td.our-jurisdiction:nth-child(14) { width: 8%; } /* Sign Off Station */
+        th.our-jurisdiction:nth-child(15), td.our-jurisdiction:nth-child(15) { width: 5%; } /* Action */
+
+        /* Truncate long text in specific columns */
+        td.our-crew:nth-child(2), td.our-crew:nth-child(4), td.our-crew:nth-child(10), td.our-crew:nth-child(11),
+        td.our-jurisdiction:nth-child(2), td.our-jurisdiction:nth-child(4), td.our-jurisdiction:nth-child(10) {
+            text-overflow: ellipsis;
+            overflow: hidden;
+        }
+
+        /* Table Inputs */
+        input[type="text"] {
+            width: 100%;
+            padding: 4px 6px;
+            border: 1px solid #d1d5db;
+            border-radius: 3px;
+            font-size: 10.5px;
+            background: #ffffff;
+            text-transform: uppercase; /* Force uppercase display */
+        }
+
+        input[type="datetime-local"] {
+            width: 100%;
+            padding: 5px 8px;
+            border: 1px solid #d1d5db;
+            border-radius: 4px;
+            font-size: 10.5px;
+            background: #f8fafc;
+            color: #111827;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        input[type="datetime-local"]:focus {
+            border-color: #1e3a8a;
+            box-shadow: 0 0 0 3px rgba(30, 58, 138, 0.2);
+            outline: none;
+        }
+
+        textarea {
+            width: 100%;
+            min-width: 120px;
+            min-height: 35px;
+            padding: 4px 6px;
+            border: 1px solid #d1d5db;
+            border-radius: 3px;
+            font-size: 10.5px;
+            background: #ffffff;
+            resize: vertical;
+        }
+
+        input[type="text"]:focus,
+        textarea:focus {
+            border-color: #1e3a8a;
+            box-shadow: 0 0 0 2px rgba(30, 58, 138, 0.15);
+            outline: none;
+        }
+
+        td button {
+            width: 100%;
+            padding: 4px 10px;
+            background-color: #15803d;
+            color: #ffffff;
+            border: none;
+            border-radius: 3px;
+            font-size: 10.5px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        td button:disabled {
+            background-color: #9ca3af;
+            cursor: not-allowed;
+        }
+
+        /* Tooltip for OUR CREW and OUR JURISDICTION */
+        .tooltip {
+            position: relative;
+        }
+
+        .tooltip:hover::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            background: #1f2937;
+            color: #ffffff;
+            padding: 5px 8px;
+            border-radius: 3px;
+            font-size: 9px;
+            line-height: 1.4;
+            z-index: 10;
+            bottom: calc(100% + 5px);
+            left: 50%;
+            transform: translateX(-50%);
+            white-space: nowrap;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .form-container {
+                grid-template-columns: 1fr;
+            }
+
+            .form-container button {
+                width: 100%;
+            }
+
+            table {
+                min-width: 600px;
+            }
+
+            th, td {
+                font-size: 9.5px;
+                padding: 4px 5px;
+            }
+
+            th {
+                font-size: 10px;
+            }
+
+            input[type="text"],
+            input[type="datetime-local"],
+            textarea,
+            td button {
+                font-size: 9.5px;
+                padding: 3px 4px;
+            }
+
+            input[type="datetime-local"] {
+                padding: 4px 6px;
+            }
+
+            textarea {
+                min-width: 100px;
+                min-height: 30px;
+            }
+
+            /* Adjusted Column Widths for OUR CREW */
+            th.our-crew:nth-child(1), td.our-crew:nth-child(1) { width: 8%; } /* LP ID */
+            th.our-crew:nth-child(2), td.our-crew:nth-child(2) { width: 5%; } /* LP Name */
+            th.our-crew:nth-child(3), td.our-crew:nth-child(3) { width: 6%; } /* LP Mobile */
+            th.our-crew:nth-child(4), td.our-crew:nth-child(4) { width: 5%; } /* ALP Name */
+            th.our-crew:nth-child(5), td.our-crew:nth-child(5) { width: 8%; } /* Sign On Time */
+            th.our-crew:nth-child(6), td.our-crew:nth-child(6) { width: 5%; } /* Train No */
+            th.our-crew:nth-child(7), td.our-crew:nth-child(7) { width: 5%; } /* LOCO No */
+            th.our-crew:nth-child(8), td.our-crew:nth-child(8) { width: 6%; } /* TimeStamp */
+            th.our-crew:nth-child(9), td.our-crew:nth-child(9) { width: 6%; } /* TLC Timestamp */
+            th.our-crew:nth-child(10), td.our-crew:nth-child(10) { width: 6%; } /* Current Location */
+            th.our-crew:nth-child(11), td.our-crew:nth-child(11) { width: 6%; } /* Assign Lobby */
+            th.our-crew:nth-child(12), td.our-crew:nth-child(12) { width: 6%; } /* Total Duty Hours */
+            th.our-crew:nth-child(13), td.our-crew:nth-child(13) { width: 12%; } /* CCC Remark */
+            th.our-crew:nth-child(14), td.our-crew:nth-child(14) { width: 9%; } /* Sign Off Time */
+            th.our-crew:nth-child(15), td.our-crew:nth-child(15) { width: 8%; } /* Sign Off Station */
+            th.our-crew:nth-child(16), td.our-crew:nth-child(16) { width: 6%; } /* Action */
+
+            /* Adjusted Column Widths for OUR JURISDICTION */
+            th.our-jurisdiction:nth-child(1), td.our-jurisdiction:nth-child(1) { width: 8%; } /* LP ID */
+            th.our-jurisdiction:nth-child(2), td.our-jurisdiction:nth-child(2) { width: 6%; } /* LP Name */
+            th.our-jurisdiction:nth-child(3), td.our-jurisdiction:nth-child(3) { width: 7%; } /* LP Mobile */
+            th.our-jurisdiction:nth-child(4), td.our-jurisdiction:nth-child(4) { width: 6%; } /* ALP Name */
+            th.our-jurisdiction:nth-child(5), td.our-jurisdiction:nth-child(5) { width: 8%; } /* Sign On Time */
+            th.our-jurisdiction:nth-child(6), td.our-jurisdiction:nth-child(6) { width: 6%; } /* Train No */
+            th.our-jurisdiction:nth-child(7), td.our-jurisdiction:nth-child(7) { width: 6%; } /* LOCO No */
+            th.our-jurisdiction:nth-child(8), td.our-jurisdiction:nth-child(8) { width: 7%; } /* TimeStamp */
+            th.our-jurisdiction:nth-child(9), td.our-jurisdiction:nth-child(9) { width: 7%; } /* TLC Timestamp */
+            th.our-jurisdiction:nth-child(10), td.our-jurisdiction:nth-child(10) { width: 7%; } /* Current Location */
+            th.our-jurisdiction:nth-child(11), td.our-jurisdiction:nth-child(11) { width: 7%; } /* Total Duty Hours */
+            th.our-jurisdiction:nth-child(12), td.our-jurisdiction:nth-child(12) { width: 12%; } /* CCC Remark */
+            th.our-jurisdiction:nth-child(13), td.our-jurisdiction:nth-child(13) { width: 9%; } /* Sign Off Time */
+            th.our-jurisdiction:nth-child(14), td.our-jurisdiction:nth-child(14) { width: 8%; } /* Sign Off Station */
+            th.our-jurisdiction:nth-child(15), td.our-jurisdiction:nth-child(15) { width: 6%; } /* Action */
+        }
+
+        @media (max-width: 480px) {
+            table {
+                min-width: 500px;
+            }
+
+            th, td {
+                font-size: 9px;
+                padding: 3px 4px;
+            }
+
+            th {
+                font-size: 9px;
+            }
+
+            input[type="text"],
+            input[type="datetime-local"],
+            textarea,
+            td button {
+                font-size: 9px;
+                padding: 2px 3px;
+            }
+
+            input[type="datetime-local"] {
+                padding: 3px 4px;
+            }
+
+            textarea {
+                min-width: 80px;
+                min-height: 25px;
+            }
+
+            /* Further Adjusted Column Widths for OUR CREW */
+            th.our-crew:nth-child(1), td.our-crew:nth-child(1) { width: 10%; } /* LP ID */
+            th.our-crew:nth-child(2), td.our-crew:nth-child(2) { width: 4%; } /* LP Name */
+            th.our-crew:nth-child(3), td.our-crew:nth-child(3) { width: 5%; } /* LP Mobile */
+            th.our-crew:nth-child(4), td.our-crew:nth-child(4) { width: 4%; } /* ALP Name */
+            th.our-crew:nth-child(5), td.our-crew:nth-child(5) { width: 10%; } /* Sign On Time */
+            th.our-crew:nth-child(6), td.our-crew:nth-child(6) { width: 5%; } /* Train No */
+            th.our-crew:nth-child(7), td.our-crew:nth-child(7) { width: 5%; } /* LOCO No */
+            th.our-crew:nth-child(8), td.our-crew:nth-child(8) { width: 5%; } /* TimeStamp */
+            th.our-crew:nth-child(9), td.our-crew:nth-child(9) { width: 5%; } /* TLC Timestamp */
+            th.our-crew:nth-child(10), td.our-crew:nth-child(10) { width: 5%; } /* Current Location */
+            th.our-crew:nth-child(11), td.our-crew:nth-child(11) { width: 5%; } /* Assign Lobby */
+            th.our-crew:nth-child(12), td.our-crew:nth-child(12) { width: 5%; } /* Total Duty Hours */
+            th.our-crew:nth-child(13), td.our-crew:nth-child(13) { width: 15%; } /* CCC Remark */
+            th.our-crew:nth-child(14), td.our-crew:nth-child(14) { width: 11%; } /* Sign Off Time */
+            th.our-crew:nth-child(15), td.our-crew:nth-child(15) { width: 10%; } /* Sign Off Station */
+            th.our-crew:nth-child(16), td.our-crew:nth-child(16) { width: 8%; } /* Action */
+
+            /* Further Adjusted Column Widths for OUR JURISDICTION */
+            th.our-jurisdiction:nth-child(1), td.our-jurisdiction:nth-child(1) { width: 10%; } /* LP ID */
+            th.our-jurisdiction:nth-child(2), td.our-jurisdiction:nth-child(2) { width: 5%; } /* LP Name */
+            th.our-jurisdiction:nth-child(3), td.our-jurisdiction:nth-child(3) { width: 6%; } /* LP Mobile */
+            th.our-jurisdiction:nth-child(4), td.our-jurisdiction:nth-child(4) { width: 5%; } /* ALP Name */
+            th.our-jurisdiction:nth-child(5), td.our-jurisdiction:nth-child(5) { width: 10%; } /* Sign On Time */
+            th.our-jurisdiction:nth-child(6), td.our-jurisdiction:nth-child(6) { width: 5%; } /* Train No */
+            th.our-jurisdiction:nth-child(7), td.our-jurisdiction:nth-child(7) { width: 5%; } /* LOCO No */
+            th.our-jurisdiction:nth-child(8), td.our-jurisdiction:nth-child(8) { width: 6%; } /* TimeStamp */
+            th.our-jurisdiction:nth-child(9), td.our-jurisdiction:nth-child(9) { width: 6%; } /* TLC Timestamp */
+            th.our-jurisdiction:nth-child(10), td.our-jurisdiction:nth-child(10) { width: 6%; } /* Current Location */
+            th.our-jurisdiction:nth-child(11), td.our-jurisdiction:nth-child(11) { width: 6%; } /* Total Duty Hours */
+            th.our-jurisdiction:nth-child(12), td.our-jurisdiction:nth-child(12) { width: 15%; } /* CCC Remark */
+            th.our-jurisdiction:nth-child(13), td.our-jurisdiction:nth-child(13) { width: 11%; } /* Sign Off Time */
+            th.our-jurisdiction:nth-child(14), td.our-jurisdiction:nth-child(14) { width: 10%; } /* Sign Off Station */
+            th.our-jurisdiction:nth-child(15), td.our-jurisdiction:nth-child(15) { width: 8%; } /* Action */
+        }
+    </style>
+</head>
+<body>
+    <div class="form-container">
+        <label for="criteria">Select Criteria:</label>
+        <select id="criteria">
+            <option value="OUR CREW">OUR CREW</option>
+            <option value="OUR JURISDICTION">OUR JURISDICTION</option>
+        </select>
+        <label for="lobby">Lobby:</label>
+        <select id="lobby">
+            <option value="AKT">AKT</option>
+            <option value="BJRI">BJRI</option>
+            <option value="BRJN">BRJN</option>
+            <option value="BSP">BSP</option>
+            <option value="KHS">KHS</option>
+            <option value="KRBA">KRBA</option>
+            <option value="PND">PND</option>
+            <option value="RIG">RIG</option>
+            <option value="SDL">SDL</option>
+            <option value="SJQ">SJQ</option>
+            <option value="USL">USL</option>
+        </select>
+        <label for="fromDate">From Date:</label>
+        <input type="date" id="fromDate">
+        <label for="toDate">To Date:</label>
+        <input type="date" id="toDate">
+        <button onclick="showReport()">Show Report</button>
+    </div>
+    <div id="error" class="error"></div>
+    <div id="loading" class="loading"></div>
+    <div class="table-container">
+        <table id="reportTable">
+            <thead id="tableHeader"></thead>
+            <tbody id="reportBody"></tbody>
+        </table>
+    </div>
+
+    <script>
+        const CLIENT_ID = '547073147985-ap3u2ed867imq6q810gjc82jfsme6tqm.apps.googleusercontent.com';
+        const API_KEY = 'AIzaSyBf3C_Ly8bIF_f-t30wE2e7cMsc2hz0co0';
+        const SPREADSHEET_ID = '1Eob3yiujIi0sNtsPQr_HCvQtlybXnq6K11bm1wAcqAo';
+        const SHEET_NAME = 'input';
+        const SCOPES = 'https://www.googleapis.com/auth/spreadsheets';
+
+        let tokenClient;
+        let accessToken = null;
+
+        function initGoogleAPI() {
+            if (!window.location.protocol.startsWith('https')) {
+                document.getElementById('error').innerText = 'Warning: Running on HTTP may cause authentication errors. Use HTTPS for best results.';
+            }
+
+            gapi.load('client', () => {
+                gapi.client.init({
+                    apiKey: API_KEY,
+                    discoveryDocs: ['https://sheets.googleapis.com/$discovery/rest?version=v4'],
+                }).then(() => {
+                    tokenClient = google.accounts.oauth2.initTokenClient({
+                        client_id: CLIENT_ID,
+                        scope: SCOPES,
+                        callback: (tokenResponse) => {
+                            if (tokenResponse.error) {
+                                document.getElementById('error').innerText = 'Authentication failed: ' + tokenResponse.error;
+                                return;
+                            }
+                            accessToken = tokenResponse.access_token;
+                            document.getElementById('loading').innerText = 'Authenticated successfully!';
+                            setTimeout(() => { document.getElementById('loading').innerText = ''; }, 2000);
+                        },
+                    });
+                    tokenClient.requestAccessToken();
+                }).catch((error) => {
+                    document.getElementById('error').innerText = 'Error initializing Google API: ' + error.message;
+                });
+            });
+        }
+
+        function calculateDutyHours(signOnTime) {
+            if (!signOnTime) {
+                console.warn('Sign On Time is empty or undefined');
+                return 'N/A';
+            }
+            try {
+                const [datePart, timePart] = signOnTime.split(' ');
+                if (!datePart || !timePart) {
+                    console.warn(`Invalid Sign On Time format: ${signOnTime}`);
+                    return 'N/A';
+                }
+                const [day, month, year] = datePart.split('/').map(Number);
+                const [hours, minutes, seconds] = timePart.split(':').map(Number);
+                if (isNaN(day) || isNaN(month) || isNaN(year) || isNaN(hours) || isNaN(minutes) || isNaN(seconds)) {
+                    console.warn(`Invalid date/time components in: ${signOnTime}`);
+                    return 'N/A';
+                }
+                const signOnDateTime = new Date(year, month - 1, day, hours, minutes, seconds);
+                if (isNaN(signOnDateTime.getTime())) {
+                    console.warn(`Invalid Date object created from: ${signOnTime}`);
+                    return 'N/A';
+                }
+                const now = new Date('2025-05-22T17:33:00+05:30'); // Current IST time
+                const diffMs = now - signOnDateTime;
+                const diffHours = diffMs / (1000 * 60 * 60);
+                console.log(`Calculating duty hours: Sign On=${signOnTime}, Now=${now.toISOString()}, Hours=${diffHours.toFixed(2)}`);
+                return diffHours >= 0 ? diffHours.toFixed(2) : 'N/A';
+            } catch (error) {
+                console.warn(`Error calculating duty hours: ${error.message}, Sign On=${signOnTime}`);
+                return 'N/A';
+            }
+        }
+
+        function showReport() {
+            const criteria = document.getElementById('criteria').value;
+            const lobby = document.getElementById('lobby').value;
+            const fromDate = document.getElementById('fromDate').value;
+            const toDate = document.getElementById('toDate').value;
+
+            if (!fromDate || !toDate) {
+                document.getElementById('error').innerText = 'Please select both From Date and To Date.';
+                return;
+            }
+
+            if (!tokenClient) {
+                document.getElementById('error').innerText = 'Google API not initialized. Please wait and try again.';
+                setTimeout(showReport, 2000);
+                return;
+            }
+
+            if (!accessToken) {
+                document.getElementById('error').innerText = 'Not authenticated. Requesting access...';
+                tokenClient.requestAccessToken();
+                setTimeout(showReport, 3000);
+                return;
+            }
+
+            document.getElementById('loading').innerText = 'Fetching data...';
+            gapi.client.sheets.spreadsheets.values.get({
+                spreadsheetId: SPREADSHEET_ID,
+                range: `${SHEET_NAME}!A:X`,
+            }).then((response) => {
+                document.getElementById('loading').innerText = '';
+                const values = response.result.values || [];
+                const thead = document.getElementById('tableHeader');
+                const tbody = document.getElementById('reportBody');
+                thead.innerHTML = '';
+                tbody.innerHTML = '';
+                document.getElementById('error').innerText = '';
+
+                // Set table headers based on criteria
+                let headerRow = document.createElement('tr');
+                if (criteria === 'OUR JURISDICTION') {
+                    headerRow.innerHTML = `
+                        <th class="our-jurisdiction">LP ID</th>
+                        <th class="our-jurisdiction">LP Name</th>
+                        <th class="our-jurisdiction">LP Mobile</th>
+                        <th class="our-jurisdiction">ALP Name</th>
+                        <th class="our-jurisdiction">Sign On Time</th>
+                        <th class="our-jurisdiction">Train No</th>
+                        <th class="our-jurisdiction">LOCO No</th>
+                        <th class="our-jurisdiction">TimeStamp</th>
+                        <th class="our-jurisdiction">TLC Timestamp</th>
+                        <th class="our-jurisdiction">Current Location</th>
+                        <th class="our-jurisdiction">Total Duty Hours</th>
+                        <th class="our-jurisdiction">CCC Remark</th>
+                        <th class="our-jurisdiction">Sign Off Time</th>
+                        <th class="our-jurisdiction">Sign Off Station</th>
+                        <th class="our-jurisdiction">Action</th>
+                    `;
+                } else {
+                    headerRow.innerHTML = `
+                        <th class="our-crew">LP ID</th>
+                        <th class="our-crew">LP Name</th>
+                        <th class="our-crew">LP Mobile</th>
+                        <th class="our-crew">ALP Name</th>
+                        <th class="our-crew">Sign On Time</th>
+                        <th class="our-crew">Train No</th>
+                        <th class="our-crew">LOCO No</th>
+                        <th class="our-crew">TimeStamp</th>
+                        <th class="our-crew">TLC Timestamp</th>
+                        <th class="our-crew">Current Location</th>
+                        <th class="our-crew">Assign Lobby</th>
+                        <th class="our-crew">Total Duty Hours</th>
+                        <th class="our-crew">CCC Remark</th>
+                        <th class="our-crew">Sign Off Time</th>
+                        <th class="our-crew">Sign Off Station</th>
+                        <th class="our-crew">Action</th>
+                    `;
+                }
+                thead.appendChild(headerRow);
+
+                // Filter data
+                const filteredData = values.filter((row, index) => {
+                    if (index === 0) return false; // Skip header row
+                    // Check Sign Off Time (W) is blank for both criteria
+                    const signOffTime = row[22] || '';
+                    if (signOffTime) return false;
+                    // Date filter (G)
+                    const rowDate = row[6] ? (row[6].includes('/') ? row[6].split('/').reverse().join('-') : row[6]) : '';
+                    const dateMatch = (!fromDate || rowDate >= fromDate) && (!toDate || rowDate <= toDate);
+                    // Criteria filter
+                    let criteriaMatch = false;
+                    if (criteria === 'OUR CREW') {
+                        const lpId = row[0] || '';
+                        const lpIdPrefix = lpId.match(/^[A-Z]+/)?.[0] || '';
+                        criteriaMatch = lpIdPrefix === lobby;
+                    } else if (criteria === 'OUR JURISDICTION') {
+                        const assignLobby = row[18] || '';
+                        criteriaMatch = assignLobby === lobby;
+                    }
+                    return dateMatch && criteriaMatch;
+                });
+
+                if (filteredData.length === 0) {
+                    document.getElementById('error').innerText = 'No data found for the selected criteria, lobby, and date range.';
+                }
+
+                filteredData.forEach((row, index) => {
+                    const rowIndex = values.indexOf(row) + 1; // 1-based index
+                    const tr = document.createElement('tr');
+                    tr.id = `row_${index}`;
+                    tr.className = 'tooltip';
+                    tr.setAttribute('data-tooltip', row[19] || 'No TLC Remark');
+                    const dutyHours = calculateDutyHours(row[7]);
+                    if (row[21]) {
+                        tr.classList.add('has-ccc-remark');
+                    }
+                    if (criteria === 'OUR JURISDICTION') {
+                        tr.innerHTML = `
+                            <td class="our-jurisdiction">${row[0] || ''}</td> <!-- LP ID -->
+                            <td class="our-jurisdiction">${row[1] || ''}</td> <!-- LP Name -->
+                            <td class="our-jurisdiction">${row[2] || ''}</td> <!-- LP Mobile -->
+                            <td class="our-jurisdiction">${row[4] || ''}</td> <!-- ALP Name -->
+                            <td class="our-jurisdiction">${row[7] || ''}</td> <!-- Sign On Time -->
+                            <td class="our-jurisdiction">${row[9] || ''}</td> <!-- Train No -->
+                            <td class="our-jurisdiction">${row[10] || ''}</td> <!-- LOCO No -->
+                            <td class="our-jurisdiction">${row[13] || ''}</td> <!-- TimeStamp -->
+                            <td class="our-jurisdiction">${row[16] || ''}</td> <!-- TLC Timestamp -->
+                            <td class="our-jurisdiction">${row[17] || ''}</td> <!-- Current Location -->
+                            <td class="our-jurisdiction">${dutyHours}</td> <!-- Total Duty Hours -->
+                            <td class="our-jurisdiction"><textarea id="cccRemark_${index}" placeholder="Enter CCC Remark" oninput="validateRow(${index}, '${criteria}')">${row[21] || ''}</textarea></td>
+                            <td class="our-jurisdiction"><input type="datetime-local" id="signOffTime_${index}" oninput="validateRow(${index}, '${criteria}')"></td>
+                            <td class="our-jurisdiction"><input type="text" id="signOffStation_${index}" placeholder="Enter Station" oninput="this.value = this.value.toUpperCase(); validateRow(${index}, '${criteria}')"></td>
+                            <td class="our-jurisdiction"><button id="submitButton_${index}" onclick="submitData(${rowIndex}, ${index}, '${criteria}')" disabled>Submit</button></td>
+                        `;
+                    } else {
+                        tr.innerHTML = `
+                            <td class="our-crew">${row[0] || ''}</td> <!-- LP ID -->
+                            <td class="our-crew">${row[1] || ''}</td> <!-- LP Name -->
+                            <td class="our-crew">${row[2] || ''}</td> <!-- LP Mobile -->
+                            <td class="our-crew">${row[4] || ''}</td> <!-- ALP Name -->
+                            <td class="our-crew">${row[7] || ''}</td> <!-- Sign On Time -->
+                            <td class="our-crew">${row[9] || ''}</td> <!-- Train No -->
+                            <td class="our-crew">${row[10] || ''}</td> <!-- LOCO No -->
+                            <td class="our-crew">${row[13] || ''}</td> <!-- TimeStamp -->
+                            <td class="our-crew">${row[16] || ''}</td> <!-- TLC Timestamp -->
+                            <td class="our-crew">${row[17] || ''}</td> <!-- Current Location -->
+                            <td class="our-crew">${row[18] || ''}</td> <!-- Assign Lobby -->
+                            <td class="our-crew">${dutyHours}</td> <!-- Total Duty Hours -->
+                            <td class="our-crew"><textarea id="cccRemark_${index}" placeholder="Enter CCC Remark" oninput="validateRow(${index}, '${criteria}')">${row[21] || ''}</textarea></td>
+                            <td class="our-crew"><input type="datetime-local" id="signOffTime_${index}" oninput="validateRow(${index}, '${criteria}')"></td>
+                            <td class="our-crew"><input type="text" id="signOffStation_${index}" placeholder="Enter Station" oninput="this.value = this.value.toUpperCase(); validateRow(${index}, '${criteria}')"></td>
+                            <td class="our-crew"><button id="submitButton_${index}" onclick="submitData(${rowIndex}, ${index}, '${criteria}')" disabled>Submit</button></td>
+                        `;
+                    }
+                    tbody.appendChild(tr);
+                    validateRow(index, criteria);
+                });
+            }).catch((error) => {
+                document.getElementById('loading').innerText = '';
+                document.getElementById('error').innerText = `Error fetching data: ${error.result?.error?.message || error.message}`;
+                if (error.status === 400) {
+                    document.getElementById('error').innerText += ' (Check if the sheet name "input" exists and has data in range A:X)';
+                } else if (error.status === 401 || error.status === 403) {
+                    document.getElementById('error').innerText += ' (Invalid or expired token. Re-authenticating...)';
+                    tokenClient.requestAccessToken();
+                    setTimeout(showReport, 3000);
+                }
+            });
+        }
+
+        function validateRow(index, criteria) {
+            const cccRemark = document.getElementById(`cccRemark_${index}`).value.trim();
+            const signOffTime = document.getElementById(`signOffTime_${index}`).value;
+            const signOffStation = document.getElementById(`signOffStation_${index}`).value.trim().toUpperCase();
+            const submitButton = document.getElementById(`submitButton_${index}`);
+
+            if (criteria === 'OUR JURISDICTION') {
+                // Enable submit if CCC Remark is filled
+                submitButton.disabled = !cccRemark;
+            } else {
+                // OUR CREW: All fields required
+                submitButton.disabled = !(cccRemark && signOffTime && signOffStation);
+            }
+        }
+
+        function submitData(rowIndex, index, criteria) {
+            if (!tokenClient) {
+                document.getElementById('error').innerText = 'Google API not initialized. Please wait and try again.';
+                setTimeout(() => submitData(rowIndex, index, criteria), 2000);
+                return;
+            }
+
+            if (!accessToken) {
+                document.getElementById('error').innerText = 'Not authenticated. Requesting access...';
+                tokenClient.requestAccessToken();
+                setTimeout(() => submitData(rowIndex, index, criteria), 3000);
+                return;
+            }
+
+            const cccRemark = document.getElementById(`cccRemark_${index}`).value.trim();
+            let signOffTimeInput = document.getElementById(`signOffTime_${index}`).value;
+            let signOffStation = document.getElementById(`signOffStation_${index}`).value.trim().toUpperCase();
+            let signOffTime = '';
+
+            // Validate inputs
+            if (!cccRemark) {
+                document.getElementById('error').innerText = 'Please fill CCC Remark.';
+                return;
+            }
+
+            if (signOffTimeInput) {
+                const date = new Date(signOffTimeInput);
+                if (isNaN(date.getTime())) {
+                    document.getElementById('error').innerText = 'Invalid Sign Off Time format. Please use a valid date and time.';
+                    return;
+                }
+                const day = date.getDate().toString().padStart(2, '0');
+                const month = (date.getMonth() + 1).toString().padStart(2, '0');
+                const year = date.getFullYear();
+                const hours = date.getHours().toString().padStart(2, '0');
+                const minutes = date.getMinutes().toString().padStart(2, '0');
+                const seconds = date.getSeconds().toString().padStart(2, '0');
+                signOffTime = `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
+            }
+
+            // Generate CCC Timestamp in IST (17:33 IST, May 22, 2025)
+            try {
+                const now = new Date('2025-05-22T17:33:00+05:30');
+                const day = now.getDate().toString().padStart(2, '0');
+                const month = (now.getMonth() + 1).toString().padStart(2, '0');
+                const year = now.getFullYear();
+                const hours = now.getHours().toString().padStart(2, '0');
+                const minutes = now.getMinutes().toString().padStart(2, '0');
+                const seconds = now.getSeconds().toString().padStart(2, '0');
+                const cccTimestamp = `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
+
+                document.getElementById('loading').innerText = 'Updating data...';
+                const values = [[cccTimestamp, cccRemark, signOffTime, signOffStation]];
+                const range = `${SHEET_NAME}!U${rowIndex}:X${rowIndex}`;
+                gapi.client.sheets.spreadsheets.values.update({
+                    spreadsheetId: SPREADSHEET_ID,
+                    range: range,
+                    valueInputOption: 'RAW',
+                    resource: { values }
+                }).then(() => {
+                    document.getElementById('loading').innerText = '';
+                    alert('Data updated successfully!');
+                    const row = document.getElementById(`row_${index}`);
+                    if (criteria === 'OUR JURISDICTION' && (!signOffTime || !signOffStation)) {
+                        // Partial submit: Mark row light orange
+                        row.classList.add('partial-submit');
+                    } else {
+                        // Full submit: Remove row
+                        if (row) {
+                            row.remove();
+                        }
+                    }
+                }).catch((error) => {
+                    document.getElementById('loading').innerText = '';
+                    document.getElementById('error').innerText = `Error updating data: ${error.result?.error?.message || error.message}`;
+                    if (error.status === 401 || error.status === 403) {
+                        document.getElementById('error').innerText += ' (Invalid or expired token. Re-authenticating...)';
+                        tokenClient.requestAccessToken();
+                        setTimeout(() => submitData(rowIndex, index, criteria), 3000);
+                    }
+                });
+            } catch (error) {
+                document.getElementById('loading').innerText = '';
+                document.getElementById('error').innerText = `Error formatting timestamp: ${error.message}`;
+            }
+        }
+
+        window.onload = initGoogleAPI;
+    </script>
+</body>
+</html>
