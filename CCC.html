@@ -522,7 +522,7 @@
                     console.warn(`Invalid Date object created from: ${signOnTime}`);
                     return 'N/A';
                 }
-                const now = new Date('2025-05-22T17:33:00+05:30'); // Current IST time
+                const now = new Date();
                 const diffMs = now - signOnDateTime;
                 const diffHours = diffMs / (1000 * 60 * 60);
                 console.log(`Calculating duty hours: Sign On=${signOnTime}, Now=${now.toISOString()}, Hours=${diffHours.toFixed(2)}`);
@@ -757,9 +757,10 @@
                 signOffTime = `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
             }
 
-            // Generate CCC Timestamp in IST (17:33 IST, May 22, 2025)
+            // Generate CCC Timestamp in IST (current time)
             try {
-                const now = new Date('2025-05-22T17:33:00+05:30');
+                const now = new Date();
+                const istOptions = { timeZone: 'Asia/Kolkata' };
                 const day = now.getDate().toString().padStart(2, '0');
                 const month = (now.getMonth() + 1).toString().padStart(2, '0');
                 const year = now.getFullYear();
